@@ -2,6 +2,7 @@
 import { ref, computed, watch } from "vue";
 import { GoogleMap, Marker } from "vue3-google-map";
 
+const geocoder = ref(null);
 
 const clickMap = (e) => {
   console.log("clickMap");
@@ -12,6 +13,22 @@ const clickMap = (e) => {
   console.log("lng", lng.value);
   console.log("lat", lat.value);
   markerRef.value.marker.setPosition({ lat: lat.value, lng: lng.value });
+
+  geocoder.value.geocode(
+    { location: { lat: lat.value, lng: lng.value } },
+    (results, status) => {
+      if (status === "OK") {
+        if (results[0]) {
+          address.value = results[0].formatted_address;
+          console.log("address", address.value);
+        } else {
+          window.alert("No results found");
+        }
+      } else {
+        window.alert("Geocoder failed due to: " + status);
+      }
+    }
+  );
 
 };
 const address = ref('');
@@ -83,6 +100,8 @@ watch(() => mapRef.value?.ready, (ready) => {
           options
         );
 
+
+        geocoder.value = new mapRef.value.api.Geocoder();
 
         autocomplete.addListener("place_changed", () => {
           const place = autocomplete.getPlace();
