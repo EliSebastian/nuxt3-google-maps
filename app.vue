@@ -3,6 +3,12 @@ import { ref, computed, watch } from "vue";
 import { GoogleMap, Marker } from "vue3-google-map";
 
 const geocoder = ref(null);
+const address = ref('');
+const mapRef = ref(null);
+const markerRef = ref(null);
+const autocompleteRef = ref(null);
+
+const markerPosition = ref({ lat: 0, lng: 0 });
 
 const clickMap = (e) => {
   console.log("clickMap");
@@ -31,7 +37,6 @@ const clickMap = (e) => {
   );
 
 };
-const address = ref('');
 
 const callbackAutocomplete = (place) => {
   console.log(place);
@@ -39,18 +44,12 @@ const callbackAutocomplete = (place) => {
   lat.value = place.geometry.location.lat();
 
   markerRef.value.marker.setPosition({ lat: lat.value, lng: lng.value });
+  mapRef.value.map.panTo({ lat: lat.value, lng: lng.value });
   address.value = place.formatted_address;
   console.log("lng", lng.value);
   console.log("lat", lat.value);
   console.log("address", address.value);
 }
-
-
-const mapRef = ref(null);
-const markerRef = ref(null);
-const autocompleteRef = ref(null);
-
-const markerPosition = ref({ lat: 0, lng: 0 });
 
 const lng = computed({
   get: () => markerPosition.value.lng,
@@ -84,44 +83,44 @@ const lat = computed({
 
 // Third pattern: watch for "ready" then do something with the API or map instance
 watch(() => mapRef.value?.ready, (ready) => {
-      if (!ready) return
+  if (!ready) return
 
-      console.log('The map is ready!')
-      console.log(mapRef.value.api)
-
-
-      const options = {
-          fields: ["formatted_address", "geometry", "name"],
-          strictBounds: false,
-        };
-
-        const autocomplete = new mapRef.value.api.places.Autocomplete(
-          autocompleteRef.value,
-          options
-        );
+  console.log('The map is ready!')
+  console.log(mapRef.value.api)
 
 
-        geocoder.value = new mapRef.value.api.Geocoder();
+  const options = {
+    fields: ["formatted_address", "geometry", "name"],
+    strictBounds: false,
+  };
 
-        autocomplete.addListener("place_changed", () => {
-          const place = autocomplete.getPlace();
-          if (!place.geometry || !place.geometry.location) {
-            console.log("No details available for input: '" + place.name + "'");
-            return;
-          }
-          callbackAutocomplete(place);
-        });
-      // do something with the api using `mapRef.value.api`
-      // or with the map instance using `mapRef.value.map`
-    })
+  const autocomplete = new mapRef.value.api.places.Autocomplete(
+    autocompleteRef.value,
+    options
+  );
+
+
+  geocoder.value = new mapRef.value.api.Geocoder();
+
+  autocomplete.addListener("place_changed", () => {
+    const place = autocomplete.getPlace();
+    if (!place.geometry || !place.geometry.location) {
+      console.log("No details available for input: '" + place.name + "'");
+      return;
+    }
+    callbackAutocomplete(place);
+  });
+  // do something with the api using `mapRef.value.api`
+  // or with the map instance using `mapRef.value.map`
+})
 
 </script>
 
 <template>
   <div>
     <h1>Maps</h1>
-    <GoogleMap ref="mapRef" api-key="AIzaSyDztKIwCgUXyASJK_YYYzz8xKk_1b2osVo" class="map" :center="markerPosition" :zoom="2"
-      @click="clickMap">
+    <GoogleMap ref="mapRef" api-key="AIzaSyDztKIwCgUXyASJK_YYYzz8xKk_1b2osVo" class="map" :center="markerPosition"
+      :zoom="2" @click="clickMap">
       <Marker ref="markerRef" :options="{ position: markerPosition }" />
     </GoogleMap>
     <input v-model="address" type="text" ref="autocompleteRef" />
